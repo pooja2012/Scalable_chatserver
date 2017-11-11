@@ -388,9 +388,9 @@ class SendMessageVO {
 		        	 os.println("Port : "+clientChatInfo.getSocket().getLocalPort());
 		        	 os.println("StudentID : TESTSERVER1234");*/
 		        	 String ip=String.valueOf(clientChatInfo.getSocket().getInetAddress());
-		        	 os.println("HELO BASE_TEST\\nIP:"+ip.substring(1,ip.length())
-		        	 		+ "\\nPort:"+clientChatInfo.getSocket().getLocalPort()
-		        	 		+ "\\nStudentID:TESTSERVER1234\\n");
+		        	 os.println("HELO BASE_TEST\nIP:"+ip.substring(1,ip.length())
+		        	 		+ "\nPort:"+clientChatInfo.getSocket().getLocalPort()
+		        	 		+ "\nStudentID:TESTSERVER1234\n");
 				 }else if(line.toUpperCase().startsWith("JOIN_CHATROOM")){
 					 
 					 if(line.contains("\\n")){
@@ -774,10 +774,10 @@ class SendMessageVO {
 				  os.println("JOIN_ID : "+chatInfoVO2.getJoinID());*/
 				  
 				  os.println("JOINED_CHATROOM:"+chatInfoVO2.getChatRoom()
-			      	 		+ "\\nSERVER_IP:"+chatInfoVO2.getClientIP()
-			      	 		+ "\\nPORT:"+chatInfoVO2.getPort()
-			      	 		+ "\\nROOM_REF:"+chatInfoVO2.getRoomRefId()
-			      	 		+ "\\nJOIN_ID:"+chatInfoVO2.getJoinID());
+			      	 		+ "\nSERVER_IP:"+chatInfoVO2.getClientIP()
+			      	 		+ "\nPORT:"+chatInfoVO2.getPort()
+			      	 		+ "\nROOM_REF:"+chatInfoVO2.getRoomRefId()
+			      	 		+ "\nJOIN_ID:"+chatInfoVO2.getJoinID()+"\n");
 				  
 				  synchronized (clientThread) {
 					  for (int i = 0; i < clientChatInfo.getMaxClientsCount(); i++) {
@@ -817,9 +817,9 @@ class SendMessageVO {
 			            	  clientThreads[i].getOs().println("CLIENT_NAME: " +messageVO2.getClientName());
 			            	  clientThreads[i].getOs().println("MESSAGE: " +messageVO2.getMessage());*/
 			            	  clientThreads[i].getOs().println("CHAT:" +messageVO2.getChatReference()
-				      	 		+ "\\nCLIENT_NAME:" +messageVO2.getClientName()
-				      	 		+ "\\nPORT:chatInfoVO2.getPort()"
-				      	 		+ "\\nMESSAGE:"+messageVO2.getMessage());
+				      	 		+ "\nCLIENT_NAME:" +messageVO2.getClientName()
+				      	 		+ "\nPORT:chatInfoVO2.getPort()"
+				      	 		+ "\nMESSAGE:"+messageVO2.getMessage()+"\n");
 			              }
 			            }
 			          }
@@ -837,13 +837,13 @@ class SendMessageVO {
 		  	        	clientThreads[i].getOs().println("JOIN_ID : " + clientChatInfo.getJoinID());
 		  	        	clientThreads[i].getOs().println("CLIENT_NAME : " + clientChatInfo.getClientName());*/
 		  	        	clientThreads[i].getOs().println("LEAVE_CHATROOM:" + clientChatInfo.getChatRoom()
-		      	 		+ "\\nJOIN_ID:" + clientChatInfo.getJoinID()
-		      	 		+ "\\nCLIENT_NAME:" + clientChatInfo.getClientName());
+		      	 		+ "\nJOIN_ID:" + clientChatInfo.getJoinID()
+		      	 		+ "\nCLIENT_NAME:" + clientChatInfo.getClientName()+"\n");
 		  	          }
 		  	        }
 		  	      }
 		    	  os.println("LEFT_CHATROOM:"+clientChatInfo.getChatRoom()
-	      	 		+ "\\nJOIN_ID:"+clientChatInfo.getJoinID());
+	      	 		+ "\nJOIN_ID:"+clientChatInfo.getJoinID()+"\n");
 			}
 
 

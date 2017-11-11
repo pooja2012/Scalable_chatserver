@@ -390,7 +390,7 @@ class SendMessageVO {
 		        	 String ip=String.valueOf(clientChatInfo.getSocket().getInetAddress());
 		        	 os.println("HELO BASE_TEST\nIP:"+ip.substring(1,ip.length())
 		        	 		+ "\nPort:"+clientChatInfo.getSocket().getLocalPort()
-		        	 		+ "\nStudentID:TESTSERVER1234\n");
+		        	 		+ "\nStudentID:TESTSERVER1234");
 				 }else if(line.toUpperCase().startsWith("JOIN_CHATROOM")){
 					 
 					 if(line.contains("\\n")){
@@ -512,15 +512,15 @@ class SendMessageVO {
 						 if(words[0].equalsIgnoreCase("chat")){
 			   		    	 String roomRef=words[1].trim();
 			   		    	 System.out.println("CHat line : "+words[1]);
-				    		  if(null!=roomRef && Long.valueOf(roomRef)==clientChatInfo.getChatRoomRefID()){
+				    		 // if(null!=roomRef && Long.valueOf(roomRef)==clientChatInfo.getChatRoomRefID()){
 				    			  messageVO.setChatReference(clientChatInfo.getChatRoomRefID());
 				    			  sendMessageCount++;
 				    			  System.out.println("Chat: "+clientChatInfo.getChatRoomRefID()+" sendMessageCount : " +sendMessageCount);
-				    		  }else{
+				    		/*  }else{
 				    			  sendMessageCount=0;
 				    			  os.println("ERROR_CODE:ERR101");
 				    			  os.println("ERROR_DESCRIPTION : Chat room reference provided is either not valid or wrong"); 
-				    		  }
+				    		  }*/
 			   		    	 
 			   		     }
 						 if(contents.length>1){
@@ -528,16 +528,16 @@ class SendMessageVO {
 							 
 							 if(words[0].equalsIgnoreCase("JOIN_ID")){
 						    	 String id=words[1].trim();
-					    		  if(null!=id && Long.valueOf(id)==clientChatInfo.getChatInfoVO().getJoinID()){
+					    		//  if(null!=id && Long.valueOf(id)==clientChatInfo.getChatInfoVO().getJoinID()){
 					    			  messageVO.setJoinID(clientChatInfo.getChatInfoVO().getJoinID());
 					    			  sendMessageCount++;
 					    			  System.out.println("Chat: "+messageVO.getJoinID()+" sendMessageCount : " +sendMessageCount);
 					    			 
-					    		  }else{
+					    		 /* }else{
 					    			  sendMessageCount=0;
 					    			  os.println("ERROR_CODE:ERR102");
 					    			  os.println("ERROR_DESCRIPTION : Join ID reference provided is either not valid or wrong"); 
-					    		  }
+					    		  }*/
 						    	 
 						     }
 						 }
@@ -547,16 +547,16 @@ class SendMessageVO {
 						   		if(words[0].equalsIgnoreCase("CLIENT_NAME")){
 								   
 						   		  String name=words[1].trim();
-						   		  if(null!=name && name.equalsIgnoreCase(clientChatInfo.getChatInfoVO().getClientName())){
+						   		 // if(null!=name && name.equalsIgnoreCase(clientChatInfo.getChatInfoVO().getClientName())){
 						   			  messageVO.setClientName(clientChatInfo.getChatInfoVO().getClientName());
 						   			 sendMessageCount++;
 						   			 System.out.println("Chat: "+messageVO.getClientName()+" sendMessageCount : " +sendMessageCount);
 						   			 
-						   		  }else{
+						   		 /* }else{
 						   			sendMessageCount=0;
 						   			  os.println("ERROR_CODE:ERR103");
 						   			  os.println("ERROR_DESCRIPTION : Client Name provided is either not valid or wrong"); 
-						   		  }
+						   		  }*/
 								    	 
 								     }
 						 }
@@ -590,14 +590,14 @@ class SendMessageVO {
 		   		     if(words[0].equalsIgnoreCase("chat")){
 		   		    	 String roomRef=words[1].trim();
 		   		    	 System.out.println("CHat line : "+words[1]);
-			    		  if(null!=roomRef && Long.valueOf(roomRef)==clientChatInfo.getChatRoomRefID()){
+			    		 // if(null!=roomRef && Long.valueOf(roomRef)==clientChatInfo.getChatRoomRefID()){
 			    			  messageVO.setChatReference(clientChatInfo.getChatRoomRefID());
 			    			  sendMessageCount++;
 			    			  System.out.println("Chat: "+messageVO.getChatReference()+" sendMessageCount : " +sendMessageCount);
-			    		  }else{
+			    		  //}else{
 			    			  os.println("ERROR_CODE:ERR101");
 			    			  os.println("ERROR_DESCRIPTION : Chat room reference provided is either not valid or wrong"); 
-			    		  }
+			    		  //}
 		   		    	 
 		   		     }
 		   		     
@@ -624,14 +624,14 @@ class SendMessageVO {
 					 String[] words=line.trim().split(":");
 					 String name=words[1];
 					 
-			   		  if(null!=name && name.equalsIgnoreCase(clientChatInfo.getChatInfoVO().getClientName())){
+			   		//  if(null!=name && name.equalsIgnoreCase(clientChatInfo.getChatInfoVO().getClientName())){
 			   			  messageVO.setClientName(clientChatInfo.getChatInfoVO().getClientName());
 			   			  sendMessageCount++;
 			   			System.out.println("Chat: "+messageVO.getClientName()+" sendMessageCount : " +sendMessageCount);
-			   		  }else{
+			   		//  }else{
 			   			  os.println("ERROR_CODE:ERR103");
 			   			  os.println("ERROR_DESCRIPTION : Client Name provided is either not valid or wrong"); 
-			   		  }
+			   		 // }
 					 
 				 }else if(line.toUpperCase().startsWith("MESSAGE") && sendMessageCount==3 ){
 					 
@@ -702,7 +702,7 @@ class SendMessageVO {
 						  leaveChatRoom(os, clientChatInfo, clientThreads,clientThread);
 						  
 					  }
-				  }else if(line.toUpperCase().startsWith("DISCONNECT 	 	") || 
+				  }else if(line.toUpperCase().startsWith("DISCONNECT") || 
 						  (line.toUpperCase().startsWith("PORT") && disconnectCount==1) || 
 						  (line.toUpperCase().startsWith("CLIENT_NAME")) && disconnectCount==2){
 					  
@@ -777,7 +777,7 @@ class SendMessageVO {
 			      	 		+ "\nSERVER_IP:"+chatInfoVO2.getClientIP()
 			      	 		+ "\nPORT:"+chatInfoVO2.getPort()
 			      	 		+ "\nROOM_REF:"+chatInfoVO2.getRoomRefId()
-			      	 		+ "\nJOIN_ID:"+chatInfoVO2.getJoinID()+"\n");
+			      	 		+ "\nJOIN_ID:"+chatInfoVO2.getJoinID());
 				  
 				  synchronized (clientThread) {
 					  for (int i = 0; i < clientChatInfo.getMaxClientsCount(); i++) {
@@ -819,7 +819,7 @@ class SendMessageVO {
 			            	  clientThreads[i].getOs().println("CHAT:" +messageVO2.getChatReference()
 				      	 		+ "\nCLIENT_NAME:" +messageVO2.getClientName()
 				      	 		+ "\nPORT:chatInfoVO2.getPort()"
-				      	 		+ "\nMESSAGE:"+messageVO2.getMessage()+"\n");
+				      	 		+ "\nMESSAGE:"+messageVO2.getMessage());
 			              }
 			            }
 			          }
@@ -838,12 +838,12 @@ class SendMessageVO {
 		  	        	clientThreads[i].getOs().println("CLIENT_NAME : " + clientChatInfo.getClientName());*/
 		  	        	clientThreads[i].getOs().println("LEAVE_CHATROOM:" + clientChatInfo.getChatRoom()
 		      	 		+ "\nJOIN_ID:" + clientChatInfo.getJoinID()
-		      	 		+ "\nCLIENT_NAME:" + clientChatInfo.getClientName()+"\n");
+		      	 		+ "\nCLIENT_NAME:" + clientChatInfo.getClientName());
 		  	          }
 		  	        }
 		  	      }
 		    	  os.println("LEFT_CHATROOM:"+clientChatInfo.getChatRoom()
-	      	 		+ "\nJOIN_ID:"+clientChatInfo.getJoinID()+"\n");
+	      	 		+ "\nJOIN_ID:"+clientChatInfo.getJoinID());
 			}
 
 

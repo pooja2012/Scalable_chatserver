@@ -1,4 +1,3 @@
-package ChatApplication;
 import java.io.DataInputStream;
 import java.io.PrintStream;
 import java.io.IOException;
@@ -14,7 +13,7 @@ public class Server {
 	  // The server socket.
 	  public static ServerSocket serverSocket = null;
 	  // The client socket.
-	  private static Socket clientSocket = null;
+	  public static Socket clientSocket = null;
 
 	  // This chat server can accept up to maxClientsCount clients' connections.
 	  private static final int maxClientsCount = 100;
@@ -378,21 +377,29 @@ class SendMessageVO {
 	    		  
 					synchronized (this) {
 						for (int i = 0; i < maxClientsCount; i++) {
-							if (threads[i] != null 
-									&& threads[i].chatInfoVO.getClientName() != null) {
+							if (threads[i] != null) {
 								
-								threads[i].os.println("*******Bye "+this.chatInfoVO.getClientName() + "**********");
+								if(threads[i].chatInfoVO.getClientName() != null) {
+									threads[i].os.println("*******Bye "+threads[i].chatInfoVO.getClientName() + "**********");
+								}
 								threads[i].os.println("Server is getting shutdown");
 								threads[i].is.close();
 								threads[i].os.close();
+								threads[i].clientSocket.shutdownInput();
+								threads[i].clientSocket.shutdownOutput();
 								threads[i].clientSocket.close();
-							    threads[i] = null;
+								threads[i].stop();
+							   // threads[i] = null;
 							}
 						}
+						if(null!=server.clientSocket) {
+							server.clientSocket.close();
+						}
+						//if(null!=server.serverSocket) {
+							 server.serverSocket.close();
+						//}
 					}
-	    		   server.serverSocket.close();
-	    	  }
-
+			 	  }
 	      }
 
 
@@ -410,12 +417,15 @@ class SendMessageVO {
 			private ChatInfoVO chatInfoVO;
 			private SendMessageVO messageVO;
 
+			@SuppressWarnings("static-access")
 			public ChatInfoVO consumeMessage(DataInputStream is,ChatInfoVO clientChatInfo,clientThread[] clientThreads,clientThread clientThread) throws IOException{
 
 				//DataInputStream is = new DataInputStream(clientChatInfo.getSocket().getInputStream());
 				PrintStream  os = new PrintStream(clientChatInfo.getSocket().getOutputStream());
 			    messageVO=clientChatInfo.getMessageVO();
 			    chatInfoVO=clientChatInfo.getChatInfoVO();
+			    System.out.println("IP : "+clientChatInfo.getSocket().getInetAddress().getLocalHost().toString());
+			    String[] ip=clientChatInfo.getSocket().getInetAddress().getLocalHost().toString().split("/");
 			    
 			    //Initializing the transfer Objects
 			    if(null==messageVO){
@@ -441,10 +451,16 @@ class SendMessageVO {
 				System.out.println("disconnect  : "+clientChatInfo.isDisconnect());
 				System.out.println("Left : "+clientChatInfo.isLeftChatRoom());
 
-				 if(line.toUpperCase().startsWith("HELO BASE_TEST")){
+				 if(line.toUpperCase().startsWith("HELO")){
 					
-		        	
-		        	 os.println("HELO BASE_TEST\nIP:"+clientChatInfo.getSocket().getLocalAddress().getHostAddress()
+				 System.out.println("Ip1 : "+clientChatInfo.getSocket().getInetAddress());
+				 System.out.println("Ip2 : "+clientChatInfo.getSocket().getInetAddress().getHostAddress());
+				 System.out.println("Ip3 : "+clientChatInfo.getSocket().getInetAddress().getLocalHost());
+				 System.out.println("Ip4 : "+clientChatInfo.getSocket().getInetAddress().getLoopbackAddress());
+				 System.out.println("Ip5 : "+clientChatInfo.getSocket().getLocalAddress());
+				 
+				 
+				 os.println("HELO BASE_TEST\nIP:"+ip[1]
 		        	 		+ "\nPort:"+clientChatInfo.getSocket().getLocalPort()
 		        	 		+ "\nStudentID:TESTSERVER1234");
 
@@ -475,7 +491,7 @@ class SendMessageVO {
 							    	 if(joinChatCount==2){
 
 							    		 joinChatCount=0;
-							    		 chatInfoVO.setClientIP(String.valueOf(clientChatInfo.getSocket().getLocalAddress().getLocalHost()));
+							    		 chatInfoVO.setClientIP(ip[1]);
 							    		 chatInfoVO.setPort(String.valueOf(clientChatInfo.getSocket().getLocalPort()));
 
 							    		  if(null!=clientChatInfo.getRoomList() && !clientChatInfo.getRoomList().isEmpty()){

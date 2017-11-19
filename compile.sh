@@ -1,1 +1,1 @@
-##Compile script to be written
+javac Server.java

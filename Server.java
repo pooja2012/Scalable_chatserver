@@ -553,7 +553,7 @@ class SendMessageVO {
 			    	 if(joinChatCount==2){
 
 			    		 joinChatCount=0;
-			    		 chatInfoVO.setClientIP(String.valueOf(clientChatInfo.getSocket().getLocalAddress().getLocalHost()));
+			    		 chatInfoVO.setClientIP(ip[1]);
 			    		 chatInfoVO.setPort(String.valueOf(clientChatInfo.getSocket().getLocalPort()));
 
 			    		  if(null!=clientChatInfo.getRoomList() && !clientChatInfo.getRoomList().isEmpty()){

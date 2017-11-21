@@ -922,6 +922,7 @@ class SendMessageVO {
 		    	        	  for(long ref : clientThreads[i].getChatInfoVO().getRoomRefIds()){
 		    	        		//  System.out.println("Chat Ref : "+ref);
 			            		  if(ref==chatInfoVO2.getChatRoomRefID()){
+							  System.out.println("clientChatInfo.getChatRoom : "+clientChatInfo.getChatRoomRefID());
 											 clientThreads[i].getOs().println("CHAT:" +chatInfoVO2.getChatRoomRefID()
 				 				      	 		+ "\nCLIENT_NAME:" +chatInfoVO2.getClientName()
 				 				      	 		+ "\nMESSAGE:"+chatInfoVO2.getClientName()+"  has joined this chatroom");

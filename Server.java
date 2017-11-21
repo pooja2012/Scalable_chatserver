@@ -918,11 +918,11 @@ class SendMessageVO {
 		    	          if (clientThreads[i] != null //&& clientThreads[i] != clientThread
 										&& null!=clientThreads[i].getChatInfoVO().getRoomRefIds()
 		    	        		&& clientThreads[i].getChatInfoVO().getRoomRefIds().contains(chatInfoVO2.getChatRoomRefID())) {
-		    	        	//  System.out.println("inside Join Ref : "+chatInfoVO2.getChatRoomRefID());
+		    	        	 System.out.println("inside Join Ref : "+chatInfoVO2.getChatRoomRefID());
 		    	        	  for(long ref : clientThreads[i].getChatInfoVO().getRoomRefIds()){
-		    	        		//  System.out.println("Chat Ref : "+ref);
+		    	        		 System.out.println("Chat Ref : "+ref);
 			            		  if(ref==chatInfoVO2.getChatRoomRefID()){
-							  System.out.println("clientChatInfo.getChatRoom : "+clientChatInfo.getChatRoomRefID());
+							  System.out.println("clientChatInfo.getChatRoom : "+chatInfoVO2.getChatRoomRefID());
 											 clientThreads[i].getOs().println("CHAT:" +chatInfoVO2.getChatRoomRefID()
 				 				      	 		+ "\nCLIENT_NAME:" +chatInfoVO2.getClientName()
 				 				      	 		+ "\nMESSAGE:"+chatInfoVO2.getClientName()+"  has joined this chatroom");

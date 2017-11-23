@@ -1,6 +1,7 @@
-import java.io.DataInputStream;
-import java.io.PrintStream;
+import java.io.BufferedReader;
+import java.io.PrintWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Date;
@@ -53,7 +54,7 @@ public class Server {
 	          }
 	        }
 	        if (i == maxClientsCount) {
-	          PrintStream os = new PrintStream(clientSocket.getOutputStream());
+	          PrintWriter os = new PrintWriter(clientSocket.getOutputStream());
 	          os.println("Server too busy. Try later.");
 	          os.close();
 	          clientSocket.close();
@@ -282,11 +283,12 @@ class SendMessageVO {
 	 */
 	class clientThread extends Thread {
 
-	  private DataInputStream is = null;
-	  private PrintStream os = null;
+	  private BufferedReader is = null;
+	  private PrintWriter os = null;
 	  private Socket clientSocket = null;
 	  private final clientThread[] threads;
 	  private int maxClientsCount;
+	  private BufferedReader in=null;
 
 	  private ChatInfoVO chatInfoVO=new ChatInfoVO();
 	  
@@ -308,8 +310,9 @@ class SendMessageVO {
 	       */
 	    	chatInfoVO.setRoomRefIds(new ArrayList<Long>());
 	    	 Server server=new Server();
-	      is = new DataInputStream(clientSocket.getInputStream());
-	      os = new PrintStream(clientSocket.getOutputStream());
+	    //  is = new BufferedReader(clientSocket.getInputStream());
+	      os = new PrintWriter(clientSocket.getOutputStream(),true);
+	      in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 	     // System.out.println("------------------------Input from client : "+is.readLine());
 
 	      /* Start the conversation. */
@@ -323,11 +326,14 @@ class SendMessageVO {
 	    	  chatInfoVO.setSocket(clientSocket);
 	    	  ChatRoomControler chatRoomControler=new  ChatRoomControler();
 	    	  //the client input is consumed here
-	    	  chatInfoVO=chatRoomControler.consumeMessage(is,chatInfoVO, this.threads, this);
+	    	  System.out.println("Calling msg consuming");
+	    	  chatInfoVO=chatRoomControler.consumeMessage(in,chatInfoVO, this.threads, this);
 	    	  server.chatRoomRef=chatInfoVO.getRoomRefId();
 	    	  server.roomList=chatInfoVO.getRoomList();
 	    	  System.out.println("chatRoomRef end : "+server.chatRoomRef);
 	    	  System.out.println("chatRoomRef List end: "+chatInfoVO.getRoomRefIds().size());
+	    	  System.out.println("************************Returning back*******************************");
+	    	  
 	    	//  count=chatInfoVO.getJoinChatCount();
 	    	  //Disconnecting the client
 	    	  if(chatInfoVO.isDisconnect()){
@@ -368,7 +374,7 @@ class SendMessageVO {
 			      /*
 			       * Close the output stream, close the input stream, close the socket.
 			       */
-			      is.close();
+			      in.close();
 			      os.close();
 			      clientSocket.close();
 	    	  }
@@ -383,7 +389,7 @@ class SendMessageVO {
 									threads[i].os.println("*******Bye "+threads[i].chatInfoVO.getClientName() + "**********");
 								}
 								threads[i].os.println("Server is getting shutdown");
-								threads[i].is.close();
+								threads[i].in.close();
 								threads[i].os.close();
 								threads[i].clientSocket.shutdownInput();
 								threads[i].clientSocket.shutdownOutput();
@@ -400,6 +406,9 @@ class SendMessageVO {
 						//}
 					}
 			 	  }
+	    	  System.out.println("Flushing the output");
+	    	  
+	    	  os.flush();
 	      }
 
 
@@ -418,14 +427,16 @@ class SendMessageVO {
 			private SendMessageVO messageVO;
 
 			@SuppressWarnings("static-access")
-			public ChatInfoVO consumeMessage(DataInputStream is,ChatInfoVO clientChatInfo,clientThread[] clientThreads,clientThread clientThread) throws IOException{
+			public ChatInfoVO consumeMessage(BufferedReader in,ChatInfoVO clientChatInfo,clientThread[] clientThreads,clientThread clientThread) throws IOException{
 
-				//DataInputStream is = new DataInputStream(clientChatInfo.getSocket().getInputStream());
-				PrintStream  os = new PrintStream(clientChatInfo.getSocket().getOutputStream());
+				//BufferedReader is = new BufferedReader(clientChatInfo.getSocket().getInputStream());
+				PrintWriter os = new PrintWriter(clientChatInfo.getSocket().getOutputStream(),true);
 			    messageVO=clientChatInfo.getMessageVO();
 			    chatInfoVO=clientChatInfo.getChatInfoVO();
-			    System.out.println("IP : "+clientChatInfo.getSocket().getInetAddress().getLocalHost().toString());
+			    System.out.println("-*-*-*-*-*-*-*-*Entering ConsumeMessage-*-*-*-*-*-*-*-*");
 			    String[] ip=clientChatInfo.getSocket().getInetAddress().getLocalHost().toString().split("/");
+			    
+			   // Scanner scanner=new Scanner(is);
 			    
 			    //Initializing the transfer Objects
 			    if(null==messageVO){
@@ -436,449 +447,457 @@ class SendMessageVO {
 			    	chatInfoVO=new ChatInfoVO();
 			    }
 
-				@SuppressWarnings("deprecation")
-				String line = is.readLine();
-				System.out.println(new Date()+":------------------Input from client : "+line+"----------------------");
-				joinChatCount=clientChatInfo.getJoinChatCount();
-				sendMessageCount=clientChatInfo.getSendMessageCount();
-				leaveChatRoomCount=clientChatInfo.getLeaveChatRoomCount();
-				disconnectCount=clientChatInfo.getDisconnectCount();
-				System.out.println("Incoming : "+line);
-				System.out.println("joinChatCount : "+clientChatInfo.getJoinChatCount());
-				System.out.println("sendMessageCount : "+sendMessageCount);
-				System.out.println("leaveChatRoomCount : "+leaveChatRoomCount);
-				System.out.println("disconnectCount : "+disconnectCount);
-				System.out.println("disconnect  : "+clientChatInfo.isDisconnect());
-				System.out.println("Left : "+clientChatInfo.isLeftChatRoom());
-
-				 if(line.toUpperCase().startsWith("HELO")){
+				//@SuppressWarnings("deprecation")
+				String line = in.readLine();
+				
+				if(null!=line){
 					
-				 System.out.println("Ip1 : "+clientChatInfo.getSocket().getInetAddress());
-				 System.out.println("Ip2 : "+clientChatInfo.getSocket().getInetAddress().getHostAddress());
-				 System.out.println("Ip3 : "+clientChatInfo.getSocket().getInetAddress().getLocalHost());
-				 System.out.println("Ip4 : "+clientChatInfo.getSocket().getInetAddress().getLoopbackAddress());
-				 System.out.println("Ip5 : "+clientChatInfo.getSocket().getLocalAddress());
-				 
-				 
-				 os.println("HELO BASE_TEST\nIP:"+ip[1]
-		        	 		+ "\nPort:"+clientChatInfo.getSocket().getLocalPort()
-		        	 		+ "\nStudentID:TESTSERVER1234");
-
-				 }else if(line.toUpperCase().startsWith("JOIN_CHATROOM")){
-
-					 //If Input comes in single line with \n
-					 if(line.contains("\\n")){
-						 line=line.replace("\\n","#");
-						 String[] contents=line.trim().split("#");
-						 String[] words=contents[0].split(":");
-
-						 if(words[0].equalsIgnoreCase("JOIN_CHATROOM")){
-			   		    	 chatInfoVO.setChatRoom(words[1].trim());
-			   		    	 joinChatCount++;
-			   		    	clientChatInfo.setJoinChatCount(joinChatCount);
-			   		     }
-
-						 if(contents.length>2){
-							 
-							 words=contents[3].split(":");
-							 if(words[0].equalsIgnoreCase("CLIENT_NAME")){
-								 
-					   			// System.out.println("CHat line : "+words[1]);
-					   			 
-							    	 chatInfoVO.setClientName(words[1].trim());
-							    	 joinChatCount++;
-
-							    	 if(joinChatCount==2){
-
-							    		 joinChatCount=0;
-							    		 chatInfoVO.setClientIP(ip[1]);
-							    		 chatInfoVO.setPort(String.valueOf(clientChatInfo.getSocket().getLocalPort()));
-
-							    		  if(null!=clientChatInfo.getRoomList() && !clientChatInfo.getRoomList().isEmpty()){
-						    	    		//  System.out.println("Room list in");
-						    		    	  if(null!=clientChatInfo.getRoomList().get(chatInfoVO.getChatRoom().toUpperCase())){
-						    		    	//	  System.out.println("Room list not null");
-						    		    		  clientChatInfo.setRoomRefId(clientChatInfo.getRoomList().get(chatInfoVO.getChatRoom().toUpperCase()));
-						    		    	  }else{
-						    		    		  clientChatInfo.setRoomRefId(clientChatInfo.getRoomRefId()+1);
-						    		    	//	  System.out.println("Room list null chatRef: "+clientChatInfo.getChatRoomRefID());
-						    		    		  clientChatInfo.getRoomList().put(chatInfoVO.getChatRoom().toUpperCase(), clientChatInfo.getRoomRefId());
-						    		    	  }
-
-						    		      }else{
-						    		    	  clientChatInfo.setRoomRefId(clientChatInfo.getRoomRefId()+1);
-						    		    	//  System.out.println("Room list null out chatRef: "+clientChatInfo.getChatRoomRefID());
-						    		    	  clientChatInfo.getRoomList().put(chatInfoVO.getChatRoom().toUpperCase(), clientChatInfo.getRoomRefId());
-						    		      }
-
-							    		  	chatInfoVO.setChatRoomRefID(clientChatInfo.getRoomRefId());
-							    		  	chatInfoVO.setRoomRefId(clientChatInfo.getRoomRefId());
-							    		  if(null!=clientChatInfo.getRoomRefIds()){
-							    			  clientChatInfo.getRoomRefIds().add(clientChatInfo.getRoomRefId());
-							    		  }else{
-							    			  clientChatInfo.setRoomRefIds(new ArrayList<Long>());
-							    			  clientChatInfo.getRoomRefIds().add(clientChatInfo.getRoomRefId());
-							    		  }
-							    		  	
-							    		  	chatInfoVO.setJoinID(clientChatInfo.getSocket().getPort()*clientChatInfo.getRoomRefId());
-							    		  //	chatInfoVO.setChatRoom(clientChatInfo.getChatRoom());
-
-							    		  	 joinChatCount(is,os,chatInfoVO,clientChatInfo,clientThreads,clientThread);
-							    	 }
-
-							     }
-						 }
-					 }else{
+				
+						System.out.println(new Date()+":------------------Input from client : "+line+"----------------------");
+						joinChatCount=clientChatInfo.getJoinChatCount();
+						sendMessageCount=clientChatInfo.getSendMessageCount();
+						leaveChatRoomCount=clientChatInfo.getLeaveChatRoomCount();
+						disconnectCount=clientChatInfo.getDisconnectCount();
+						System.out.println("Incoming : "+line);
+						System.out.println("joinChatCount : "+clientChatInfo.getJoinChatCount());
+						System.out.println("sendMessageCount : "+sendMessageCount);
+						System.out.println("leaveChatRoomCount : "+leaveChatRoomCount);
+						System.out.println("disconnectCount : "+disconnectCount);
+						System.out.println("disconnect  : "+clientChatInfo.isDisconnect());
+						System.out.println("Left : "+clientChatInfo.isLeftChatRoom());
+		
+						 if(line.toUpperCase().startsWith("HELO")){
+							
+						 /*System.out.println("Ip1 : "+clientChatInfo.getSocket().getInetAddress());
+						 System.out.println("Ip2 : "+clientChatInfo.getSocket().getInetAddress().getHostAddress());
+						 System.out.println("Ip3 : "+clientChatInfo.getSocket().getInetAddress().getLocalHost());
+						 System.out.println("Ip4 : "+clientChatInfo.getSocket().getInetAddress().getLoopbackAddress());
+						 System.out.println("Ip5 : "+clientChatInfo.getSocket().getLocalAddress());*/
 						 
-						 //If input from client in different lines
-						 String[] words=line.trim().split(":");
-			   		     if(words[0].equalsIgnoreCase("JOIN_CHATROOM")){
-			   		    	// System.out.println("Chat line : "+words[1]);
-			   		    	 chatInfoVO.setChatRoom(words[1].trim());
-			   		    	 //System.out.println("before Count : "+joinChatCount);
-			   		    	 joinChatCount++;
-			   		    //	clientChatInfo.setJoinChatCount(joinChatCount);
-			   		    //	System.out.println("Join Count : "+clientChatInfo.getJoinChatCount());
-
-			   		     }
-					 }
-
-				 }else if(line.toUpperCase().startsWith("CLIENT_NAME") && joinChatCount==1){
-					 
-					 String[] words=line.trim().split(":");
-					// System.out.println("CHat line : "+words[1]);
-					 chatInfoVO.setClientName(words[1].trim());
-			    	 joinChatCount++;
-
-			    	 if(joinChatCount==2){
-
-			    		 joinChatCount=0;
-			    		 chatInfoVO.setClientIP(ip[1]);
-			    		 chatInfoVO.setPort(String.valueOf(clientChatInfo.getSocket().getLocalPort()));
-
-			    		  if(null!=clientChatInfo.getRoomList() && !clientChatInfo.getRoomList().isEmpty()){
-		    	    		//  System.out.println("Room list in");
-		    		    	  if(null!=clientChatInfo.getRoomList().get(chatInfoVO.getChatRoom().toUpperCase())){
-		    		    		//  System.out.println("Room list not null");
-		    		    		  clientChatInfo.setRoomRefId(clientChatInfo.getRoomList().get(chatInfoVO.getChatRoom().toUpperCase()));
-		    		    	  }else{
-		    		    		  clientChatInfo.setRoomRefId(clientChatInfo.getRoomRefId()+1);
-		    		    		  //System.out.println("Room list null chatRef: "+clientChatInfo.getChatRoomRefID());
-		    		    		  clientChatInfo.getRoomList().put(chatInfoVO.getChatRoom().toUpperCase(), clientChatInfo.getRoomRefId());
-		    		    	  }
-
-		    		      }else{
-		    		    	  clientChatInfo.setRoomRefId(clientChatInfo.getRoomRefId()+1);
-		    		    	  //System.out.println("Room list null out chatRef: "+clientChatInfo.getChatRoomRefID());
-		    		    	  clientChatInfo.getRoomList().put(chatInfoVO.getChatRoom().toUpperCase(), clientChatInfo.getRoomRefId());
-		    		      }
-			    		  
-			    		//  System.out.println("Room list chatRef: "+clientChatInfo.getRoomRefId());
-
-			    		  if(null!=clientChatInfo.getRoomRefIds()){
-			    			  clientChatInfo.getRoomRefIds().add(clientChatInfo.getRoomRefId());
-			    		  }else{
-			    			  clientChatInfo.setRoomRefIds(new ArrayList<Long>());
-			    			  clientChatInfo.getRoomRefIds().add(clientChatInfo.getRoomRefId());
-			    		  }
-			    		  
-			    		  	chatInfoVO.setJoinID(clientChatInfo.getSocket().getPort()*clientChatInfo.getRoomRefId());
-			    		  	chatInfoVO.setChatRoomRefID(clientChatInfo.getRoomRefId());
-
-			    		  	 joinChatCount(is,os,chatInfoVO,clientChatInfo,clientThreads,clientThread);
-			    	 }
-			    	 
-				 }else if (line.toLowerCase().startsWith("chat")){
-
-					 // if Chat Message command comes in one line
-					 if(line.contains("\\n")){
-						 line=line.replace("\\n","#");
-						 String[] contents=line.trim().split("#");
-						 String[] words=contents[0].split(":");
-
-						 if(words[0].equalsIgnoreCase("chat")){
-			   		    	 String roomRef=words[1].trim();
-			   		    	 
-			   		    	 //System.out.println("Chat line : "+words[1]);
-			   		    	 
-				    		//  if(null!=roomRef && clientChatInfo.getRoomRefIds().contains(Long.valueOf(roomRef))){
-				    			  messageVO.setChatReference(Long.valueOf(roomRef));
-				    			  sendMessageCount++;
-				    			//  System.out.println("Chat: "+clientChatInfo.getChatRoomRefID()+" sendMessageCount : " +sendMessageCount);
-				    		/*  }else{
-				    			  sendMessageCount=0;
-				    			  os.println("ERROR_CODE:ERR101");
-				    			  os.println("ERROR_DESCRIPTION : Chat room reference provided is either not valid or wrong");
-				    		  }*/
-
-			   		     }
-						 if(contents.length>1){
-							 words=contents[1].split(":");
-
-							 if(words[0].equalsIgnoreCase("JOIN_ID")){
-						    	 String id=words[1].trim();
-					    		
-					    			  messageVO.setJoinID(Long.valueOf(id));
+						 
+						 os.println("HELO BASE_TEST\nIP:"+ip[1]
+				        	 		+ "\nPort:"+clientChatInfo.getSocket().getLocalPort()
+				        	 		+ "\nStudentID:TESTSERVER1234");
+		
+						 }else if(line.toUpperCase().startsWith("JOIN_CHATROOM")){
+		
+							 //If Input comes in single line with \n
+							 if(line.contains("\\n")){
+								 line=line.replace("\\n","#");
+								 String[] contents=line.trim().split("#");
+								 String[] words=contents[0].split(":");
+		
+								 if(words[0].equalsIgnoreCase("JOIN_CHATROOM")){
+					   		    	 chatInfoVO.setChatRoom(words[1].trim());
+					   		    	 joinChatCount++;
+					   		    	clientChatInfo.setJoinChatCount(joinChatCount);
+					   		     }
+		
+								 if(contents.length>2){
+									 
+									 words=contents[3].split(":");
+									 if(words[0].equalsIgnoreCase("CLIENT_NAME")){
+										 
+							   			// System.out.println("CHat line : "+words[1]);
+							   			 
+									    	 chatInfoVO.setClientName(words[1].trim());
+									    	 joinChatCount++;
+		
+									    	 if(joinChatCount==2){
+		
+									    		 joinChatCount=0;
+									    		 chatInfoVO.setClientIP(ip[1]);
+									    		 chatInfoVO.setPort(String.valueOf(clientChatInfo.getSocket().getLocalPort()));
+		
+									    		  if(null!=clientChatInfo.getRoomList() && !clientChatInfo.getRoomList().isEmpty()){
+								    	    		//  System.out.println("Room list in");
+								    		    	  if(null!=clientChatInfo.getRoomList().get(chatInfoVO.getChatRoom().toUpperCase())){
+								    		    	//	  System.out.println("Room list not null");
+								    		    		  clientChatInfo.setRoomRefId(clientChatInfo.getRoomList().get(chatInfoVO.getChatRoom().toUpperCase()));
+								    		    	  }else{
+								    		    		  clientChatInfo.setRoomRefId(clientChatInfo.getRoomRefId()+1);
+								    		    	//	  System.out.println("Room list null chatRef: "+clientChatInfo.getChatRoomRefID());
+								    		    		  clientChatInfo.getRoomList().put(chatInfoVO.getChatRoom().toUpperCase(), clientChatInfo.getRoomRefId());
+								    		    	  }
+		
+								    		      }else{
+								    		    	  clientChatInfo.setRoomRefId(clientChatInfo.getRoomRefId()+1);
+								    		    	//  System.out.println("Room list null out chatRef: "+clientChatInfo.getChatRoomRefID());
+								    		    	  clientChatInfo.getRoomList().put(chatInfoVO.getChatRoom().toUpperCase(), clientChatInfo.getRoomRefId());
+								    		      }
+		
+									    		  	chatInfoVO.setChatRoomRefID(clientChatInfo.getRoomRefId());
+									    		  	chatInfoVO.setRoomRefId(clientChatInfo.getRoomRefId());
+									    		  if(null!=clientChatInfo.getRoomRefIds()){
+									    			  clientChatInfo.getRoomRefIds().add(clientChatInfo.getRoomRefId());
+									    		  }else{
+									    			  clientChatInfo.setRoomRefIds(new ArrayList<Long>());
+									    			  clientChatInfo.getRoomRefIds().add(clientChatInfo.getRoomRefId());
+									    		  }
+									    		  	
+									    		  	chatInfoVO.setJoinID(clientChatInfo.getSocket().getPort()*clientChatInfo.getRoomRefId());
+									    		  //	chatInfoVO.setChatRoom(clientChatInfo.getChatRoom());
+		
+									    		  	 joinChatCount(is,os,chatInfoVO,clientChatInfo,clientThreads,clientThread);
+									    	 }
+		
+									     }
+								 }
+							 }else{
+								 
+								 //If input from client in different lines
+								 String[] words=line.trim().split(":");
+					   		     if(words[0].equalsIgnoreCase("JOIN_CHATROOM")){
+					   		    	// System.out.println("Chat line : "+words[1]);
+					   		    	 chatInfoVO.setChatRoom(words[1].trim());
+					   		    	 //System.out.println("before Count : "+joinChatCount);
+					   		    	 joinChatCount++;
+					   		    //	clientChatInfo.setJoinChatCount(joinChatCount);
+					   		    //	System.out.println("Join Count : "+clientChatInfo.getJoinChatCount());
+		
+					   		     }
+							 }
+		
+						 }else if(line.toUpperCase().startsWith("CLIENT_NAME") && joinChatCount==1){
+							 
+							 String[] words=line.trim().split(":");
+							// System.out.println("CHat line : "+words[1]);
+							 chatInfoVO.setClientName(words[1].trim());
+					    	 joinChatCount++;
+		
+					    	 if(joinChatCount==2){
+		
+					    		 joinChatCount=0;
+					    		 chatInfoVO.setClientIP(ip[1]);
+					    		 chatInfoVO.setPort(String.valueOf(clientChatInfo.getSocket().getLocalPort()));
+		
+					    		  if(null!=clientChatInfo.getRoomList() && !clientChatInfo.getRoomList().isEmpty()){
+				    	    		//  System.out.println("Room list in");
+				    		    	  if(null!=clientChatInfo.getRoomList().get(chatInfoVO.getChatRoom().toUpperCase())){
+				    		    		//  System.out.println("Room list not null");
+				    		    		  clientChatInfo.setRoomRefId(clientChatInfo.getRoomList().get(chatInfoVO.getChatRoom().toUpperCase()));
+				    		    	  }else{
+				    		    		  clientChatInfo.setRoomRefId(clientChatInfo.getRoomRefId()+1);
+				    		    		  //System.out.println("Room list null chatRef: "+clientChatInfo.getChatRoomRefID());
+				    		    		  clientChatInfo.getRoomList().put(chatInfoVO.getChatRoom().toUpperCase(), clientChatInfo.getRoomRefId());
+				    		    	  }
+		
+				    		      }else{
+				    		    	  clientChatInfo.setRoomRefId(clientChatInfo.getRoomRefId()+1);
+				    		    	  //System.out.println("Room list null out chatRef: "+clientChatInfo.getChatRoomRefID());
+				    		    	  clientChatInfo.getRoomList().put(chatInfoVO.getChatRoom().toUpperCase(), clientChatInfo.getRoomRefId());
+				    		      }
+					    		  
+					    		//  System.out.println("Room list chatRef: "+clientChatInfo.getRoomRefId());
+		
+					    		  if(null!=clientChatInfo.getRoomRefIds()){
+					    			  clientChatInfo.getRoomRefIds().add(clientChatInfo.getRoomRefId());
+					    		  }else{
+					    			  clientChatInfo.setRoomRefIds(new ArrayList<Long>());
+					    			  clientChatInfo.getRoomRefIds().add(clientChatInfo.getRoomRefId());
+					    		  }
+					    		  
+					    		  	chatInfoVO.setJoinID(clientChatInfo.getSocket().getPort()*clientChatInfo.getRoomRefId());
+					    		  	chatInfoVO.setChatRoomRefID(clientChatInfo.getRoomRefId());
+		
+					    		  	 joinChatCount(is,os,chatInfoVO,clientChatInfo,clientThreads,clientThread);
+					    	 }
+					    	 
+						 }else if (line.toLowerCase().startsWith("chat")){
+		
+							 // if Chat Message command comes in one line
+							 if(line.contains("\\n")){
+								 line=line.replace("\\n","#");
+								 String[] contents=line.trim().split("#");
+								 String[] words=contents[0].split(":");
+		
+								 if(words[0].equalsIgnoreCase("chat")){
+					   		    	 String roomRef=words[1].trim();
+					   		    	 
+					   		    	 //System.out.println("Chat line : "+words[1]);
+					   		    	 
+						    		//  if(null!=roomRef && clientChatInfo.getRoomRefIds().contains(Long.valueOf(roomRef))){
+						    			  messageVO.setChatReference(Long.valueOf(roomRef));
+						    			  sendMessageCount++;
+						    			//  System.out.println("Chat: "+clientChatInfo.getChatRoomRefID()+" sendMessageCount : " +sendMessageCount);
+						    		/*  }else{
+						    			  sendMessageCount=0;
+						    			  os.println("ERROR_CODE:ERR101");
+						    			  os.println("ERROR_DESCRIPTION : Chat room reference provided is either not valid or wrong");
+						    		  }*/
+		
+					   		     }
+								 if(contents.length>1){
+									 words=contents[1].split(":");
+		
+									 if(words[0].equalsIgnoreCase("JOIN_ID")){
+								    	 String id=words[1].trim();
+							    		
+							    			  messageVO.setJoinID(Long.valueOf(id));
+							    			  sendMessageCount++;
+							    	  }
+								 }
+								 if(contents.length>2){
+									 words=contents[2].split(":");
+		
+								   		if(words[0].equalsIgnoreCase("CLIENT_NAME")){
+		
+								   		  String name=words[1].trim();
+								   			  messageVO.setClientName(name);
+								   			 sendMessageCount++;
+								   			// System.out.println("Chat: "+messageVO.getClientName()+" sendMessageCount : " +sendMessageCount);
+		
+									    }
+								   		
+								 }
+		
+								 if(contents.length>2){
+									 words=contents[3].split(":");
+		
+		
+								   		if(words[0].equalsIgnoreCase("MESSAGE")){
+		
+										   String message=words[1].trim();
+								   		  if(null!=message){
+								   			  messageVO.setMessage(message);
+								   			  sendMessageCount++;
+								   		//	System.out.println("Chat: "+messageVO.getMessage()+" sendMessageCount : " +sendMessageCount);
+								   			  if(sendMessageCount==4){
+								   				  sendMessageCount=0;
+								   					sendMessage(os, clientChatInfo, clientThreads, messageVO,clientThread);
+								   			 }
+		
+								   		  }else{
+								   			sendMessageCount=0;
+								   			  os.println("ERROR_CODE:ERR102");
+								   			  os.println("ERROR_DESCRIPTION : The Message is blank !");
+								   		  }
+		
+										     }
+								 }
+							 }else	{
+								 //Input from Client in different Lines
+								 String[] words=line.split(":");
+				   		     if(words[0].equalsIgnoreCase("chat")){
+				   		    System.out.println("CHat line : "+words[1]);
+				   		    	 String roomRef=words[1].trim();
+				   		    	
+					    		//  if(null!=roomRef && clientChatInfo.getRoomRefIds().contains(Long.valueOf(roomRef))){
+					    			  messageVO.setChatReference(Long.valueOf(roomRef));
 					    			  sendMessageCount++;
-					    	  }
-						 }
-						 if(contents.length>2){
-							 words=contents[2].split(":");
-
-						   		if(words[0].equalsIgnoreCase("CLIENT_NAME")){
-
-						   		  String name=words[1].trim();
-						   			  messageVO.setClientName(name);
-						   			 sendMessageCount++;
-						   			// System.out.println("Chat: "+messageVO.getClientName()+" sendMessageCount : " +sendMessageCount);
-
-							    }
-						   		
-						 }
-
-						 if(contents.length>2){
-							 words=contents[3].split(":");
-
-
-						   		if(words[0].equalsIgnoreCase("MESSAGE")){
-
-								   String message=words[1].trim();
-						   		  if(null!=message){
-						   			  messageVO.setMessage(message);
-						   			  sendMessageCount++;
-						   		//	System.out.println("Chat: "+messageVO.getMessage()+" sendMessageCount : " +sendMessageCount);
-						   			  if(sendMessageCount==4){
-						   				  sendMessageCount=0;
-						   					sendMessage(os, clientChatInfo, clientThreads, messageVO,clientThread);
-						   			 }
-
-						   		  }else{
-						   			sendMessageCount=0;
-						   			  os.println("ERROR_CODE:ERR102");
-						   			  os.println("ERROR_DESCRIPTION : The Message is blank !");
-						   		  }
-
-								     }
-						 }
-					 }else	{
-						 //Input from Client in different Lines
-						 String[] words=line.split(":");
-		   		     if(words[0].equalsIgnoreCase("chat")){
-		   		    System.out.println("CHat line : "+words[1]);
-		   		    	 String roomRef=words[1].trim();
-		   		    	
-			    		//  if(null!=roomRef && clientChatInfo.getRoomRefIds().contains(Long.valueOf(roomRef))){
-			    			  messageVO.setChatReference(Long.valueOf(roomRef));
-			    			  sendMessageCount++;
-			    			//  System.out.println("Chat: "+messageVO.getChatReference()+" sendMessageCount : " +sendMessageCount);
-			    		 /* }else{
-			    			  os.println("ERROR_CODE:ERR101");
-			    			  os.println("ERROR_DESCRIPTION : Chat room reference provided is either not valid or wrong");
-			    		  }*/
-
-		   		     }
-
-					 }
-
-
-
-				 }else if(line.toUpperCase().startsWith("JOIN_ID") && sendMessageCount==1){
-
-					 String[] words=line.trim().split(":");
-		   		  	 String id=words[1].trim();
-
-		   		   messageVO.setJoinID(Long.valueOf(id));
-		   			  sendMessageCount++;
-		   		//	System.out.println("Chat: "+messageVO.getJoinID()+" sendMessageCount : " +sendMessageCount);
-		   		
-
-				 }else if(line.toUpperCase().startsWith("CLIENT_NAME") && sendMessageCount==2 ){
-
-					 String[] words=line.trim().split(":");
-					 String name=words[1];
-			   		
-			   			  messageVO.setClientName(name);
-			   			  sendMessageCount++;
-			   		//	System.out.println("Chat: "+messageVO.getClientName()+" sendMessageCount : " +sendMessageCount);
-			   		 
-
-				 }else if(line.toUpperCase().startsWith("MESSAGE") && sendMessageCount==3 ){
-
-					 String[] words=line.trim().split(":");
-					 String message=words[1];
-
-			   		  if(null!=message){
-			   			  messageVO.setMessage(message);
-			   			  sendMessageCount++;
-			   		//	System.out.println("Chat: "+messageVO.getMessage()+" sendMessageCount : " +sendMessageCount);
-			   			  if(sendMessageCount==4){
-			   				  sendMessageCount=0;
-			   					sendMessage(os, clientChatInfo, clientThreads, messageVO,clientThread);
-			   			 }
-
-			   		  }else{
-			   			  os.println("ERROR_CODE:ERR102");
-			   			  os.println("ERROR_DESCRIPTION : The Message is blank !");
-			   		  }
-
-				  }else if(line.toUpperCase().startsWith("LEAVE_CHATROOM") ||
-						  (line.toUpperCase().startsWith("JOIN_ID") && leaveChatRoomCount==1) ||
-						  (line.toUpperCase().startsWith("CLIENT_NAME")) && leaveChatRoomCount==2){
-					//  System.out.println("Leave chatroom inside");
-					  if(line.contains("\\n")){
-						  
-						  //If the input comes in one line
-						  
-							 line=line.replace("\\n","#");
-							 String[] contents=line.trim().split("#");
-
-
-							 if(contents.length>1){
-								 String[] words=contents[0].trim().split(":");
-								 
-								 if (words[0].equalsIgnoreCase("LEAVE_CHATROOM")) {
-									 
-									 String id=words[1].trim();
-									    clientChatInfo.setChatRoomRefID(Long.valueOf(id));
+					    			//  System.out.println("Chat: "+messageVO.getChatReference()+" sendMessageCount : " +sendMessageCount);
+					    		 /* }else{
+					    			  os.println("ERROR_CODE:ERR101");
+					    			  os.println("ERROR_DESCRIPTION : Chat room reference provided is either not valid or wrong");
+					    		  }*/
+		
+				   		     }
+		
+							 }
+		
+		
+		
+						 }else if(line.toUpperCase().startsWith("JOIN_ID") && sendMessageCount==1){
+		
+							 String[] words=line.trim().split(":");
+				   		  	 String id=words[1].trim();
+		
+				   		   messageVO.setJoinID(Long.valueOf(id));
+				   			  sendMessageCount++;
+				   		//	System.out.println("Chat: "+messageVO.getJoinID()+" sendMessageCount : " +sendMessageCount);
+				   		
+		
+						 }else if(line.toUpperCase().startsWith("CLIENT_NAME") && sendMessageCount==2 ){
+		
+							 String[] words=line.trim().split(":");
+							 String name=words[1];
+					   		
+					   			  messageVO.setClientName(name);
+					   			  sendMessageCount++;
+					   		//	System.out.println("Chat: "+messageVO.getClientName()+" sendMessageCount : " +sendMessageCount);
+					   		 
+		
+						 }else if(line.toUpperCase().startsWith("MESSAGE") && sendMessageCount==3 ){
+		
+							 String[] words=line.trim().split(":");
+							 String message=words[1];
+		
+					   		  if(null!=message){
+					   			  messageVO.setMessage(message);
+					   			  sendMessageCount++;
+					   		//	System.out.println("Chat: "+messageVO.getMessage()+" sendMessageCount : " +sendMessageCount);
+					   			  if(sendMessageCount==4){
+					   				  sendMessageCount=0;
+					   					sendMessage(os, clientChatInfo, clientThreads, messageVO,clientThread);
+					   			 }
+		
+					   		  }else{
+					   			  os.println("ERROR_CODE:ERR102");
+					   			  os.println("ERROR_DESCRIPTION : The Message is blank !");
+					   		  }
+		
+						  }else if(line.toUpperCase().startsWith("LEAVE_CHATROOM") ||
+								  (line.toUpperCase().startsWith("JOIN_ID") && leaveChatRoomCount==1) ||
+								  (line.toUpperCase().startsWith("CLIENT_NAME")) && leaveChatRoomCount==2){
+							//  System.out.println("Leave chatroom inside");
+							  if(line.contains("\\n")){
+								  
+								  //If the input comes in one line
+								  
+									 line=line.replace("\\n","#");
+									 String[] contents=line.trim().split("#");
+		
+		
+									 if(contents.length>1){
+										 String[] words=contents[0].trim().split(":");
+										 
+										 if (words[0].equalsIgnoreCase("LEAVE_CHATROOM")) {
+											 
+											 String id=words[1].trim();
+											    clientChatInfo.setChatRoomRefID(Long.valueOf(id));
+												leaveChatRoomCount++;
+												
+											}
+									 }
+									 if(contents.length>2){
+										 
+										 String[] words=contents[1].trim().split(":");
+										 
+										 if (words[0].equalsIgnoreCase("JOIN_ID")) {
+											 
+											 String id=words[1].trim();
+											 clientChatInfo.setJoinID(Long.valueOf(id));
+												leaveChatRoomCount++;
+												
+											}
+									 }
+									 if(contents.length>3){
+										 
+										 String[] words=contents[3].trim().split(":");
+										 
+										 if (words[0].equalsIgnoreCase("CLIENT_NAME")) {
+											 
+											 String name=words[1].trim();
+											 clientChatInfo.setClientName(name);
+												leaveChatRoomCount++;
+												
+											}
+									 }
+		
+		
+							  }else{
+								  //Input to leave chat comes in different lines
+							  String[] words=line.trim().split(":");
+		
+									if (words[0].equalsIgnoreCase("LEAVE_CHATROOM")) {
+											
+										String id=words[1].trim();
+										clientChatInfo.setChatRoomRefID(Long.valueOf(id));
 										leaveChatRoomCount++;
+									}
+									if ( words[0].equalsIgnoreCase("JOIN_ID")) {
+										
+										 String id=words[1].trim();
+										 clientChatInfo.setJoinID(Long.valueOf(id));
+										 leaveChatRoomCount++;
+									}
+									if (words[0].equalsIgnoreCase("CLIENT_NAME")) {
+										
+										 String name=words[1].trim();
+										 clientChatInfo.setClientName(name);
+										 leaveChatRoomCount++;
+									}
+							  }
+							  
+							  System.out.println("leaveChatRoomCount inside : "+leaveChatRoomCount);
+							  
+							  if(leaveChatRoomCount==3){
+								  //clientChatInfo.setLeftChatRoom(true);
+								  leaveChatRoomCount=0;
+								  clientChatInfo.getRoomRefIds().remove(clientChatInfo.getChatRoomRefID());
+								  leaveChatRoom(os, clientChatInfo, clientThreads,clientThread);
+		
+							  }
+						  }else if(line.toUpperCase().startsWith("DISCONNECT") ||
+								  (line.toUpperCase().startsWith("PORT") && disconnectCount==1) ||
+								  (line.toUpperCase().startsWith("CLIENT_NAME")) && disconnectCount==2){
+		
+							  if(line.contains("\\n")){
+									 line=line.replace("\\n","#");
+									 String[] contents=line.trim().split("#");
+		
+		
+									 if(contents.length>1){
+										 String[] words=line.trim().split(":");
+										 if (words[0].equalsIgnoreCase("DISCONNECT")) {
+											 disconnectCount++;
+											}
+									 }
+									 if(contents.length>2){
+										 String[] words=line.trim().split(":");
+										 if (words[0].equalsIgnoreCase("PORT")) {
+											 disconnectCount++;
+											}
+									 }
+									 if(contents.length>3){
+										 
+										 String[] words=line.trim().split(":");
+										 
+										 if (words[0].equalsIgnoreCase("CLIENT_NAME")) {
+											 
+											 String name=words[1].trim();
+											 clientChatInfo.setClientName(name);
+											 disconnectCount++;
+											 
+											}
+									 }
+		
+		
+							  }else{
+		
+							  String[] words=line.trim().split(":");
+		
+									if (words[0].equalsIgnoreCase("DISCONNECT")) {
+										disconnectCount++;
+									}
+									if (words[0].equalsIgnoreCase("PORT")) {
+										disconnectCount++;
+									}
+									if (words[0].equalsIgnoreCase("CLIENT_NAME")) {
+										
+										String name=words[1].trim();
+										 clientChatInfo.setClientName(name);
+										disconnectCount++;
 										
 									}
+		
+							  }
+		
+							  if(disconnectCount==3){
+								 clientChatInfo.setDisconnect(true);
+								  disconnectCount=0;
 							 }
-							 if(contents.length>2){
-								 
-								 String[] words=contents[1].trim().split(":");
-								 
-								 if (words[0].equalsIgnoreCase("JOIN_ID")) {
-									 
-									 String id=words[1].trim();
-									 clientChatInfo.setJoinID(Long.valueOf(id));
-										leaveChatRoomCount++;
-										
-									}
-							 }
-							 if(contents.length>3){
-								 
-								 String[] words=contents[3].trim().split(":");
-								 
-								 if (words[0].equalsIgnoreCase("CLIENT_NAME")) {
-									 
-									 String name=words[1].trim();
-									 clientChatInfo.setClientName(name);
-										leaveChatRoomCount++;
-										
-									}
-							 }
-
-
-					  }else{
-						  //Input to leave chat comes in different lines
-					  String[] words=line.trim().split(":");
-
-							if (words[0].equalsIgnoreCase("LEAVE_CHATROOM")) {
-									
-								String id=words[1].trim();
-								clientChatInfo.setChatRoomRefID(Long.valueOf(id));
-								leaveChatRoomCount++;
-							}
-							if ( words[0].equalsIgnoreCase("JOIN_ID")) {
-								
-								 String id=words[1].trim();
-								 clientChatInfo.setJoinID(Long.valueOf(id));
-								 leaveChatRoomCount++;
-							}
-							if (words[0].equalsIgnoreCase("CLIENT_NAME")) {
-								
-								 String name=words[1].trim();
-								 clientChatInfo.setClientName(name);
-								 leaveChatRoomCount++;
-							}
-					  }
-					  
-					  System.out.println("leaveChatRoomCount inside : "+leaveChatRoomCount);
-					  
-					  if(leaveChatRoomCount==3){
-						  //clientChatInfo.setLeftChatRoom(true);
-						  leaveChatRoomCount=0;
-						  clientChatInfo.getRoomRefIds().remove(clientChatInfo.getChatRoomRefID());
-						  leaveChatRoom(os, clientChatInfo, clientThreads,clientThread);
-
-					  }
-				  }else if(line.toUpperCase().startsWith("DISCONNECT") ||
-						  (line.toUpperCase().startsWith("PORT") && disconnectCount==1) ||
-						  (line.toUpperCase().startsWith("CLIENT_NAME")) && disconnectCount==2){
-
-					  if(line.contains("\\n")){
-							 line=line.replace("\\n","#");
-							 String[] contents=line.trim().split("#");
-
-
-							 if(contents.length>1){
-								 String[] words=line.trim().split(":");
-								 if (words[0].equalsIgnoreCase("DISCONNECT")) {
-									 disconnectCount++;
-									}
-							 }
-							 if(contents.length>2){
-								 String[] words=line.trim().split(":");
-								 if (words[0].equalsIgnoreCase("PORT")) {
-									 disconnectCount++;
-									}
-							 }
-							 if(contents.length>3){
-								 
-								 String[] words=line.trim().split(":");
-								 
-								 if (words[0].equalsIgnoreCase("CLIENT_NAME")) {
-									 
-									 String name=words[1].trim();
-									 clientChatInfo.setClientName(name);
-									 disconnectCount++;
-									 
-									}
-							 }
-
-
-					  }else{
-
-					  String[] words=line.trim().split(":");
-
-							if (words[0].equalsIgnoreCase("DISCONNECT")) {
-								disconnectCount++;
-							}
-							if (words[0].equalsIgnoreCase("PORT")) {
-								disconnectCount++;
-							}
-							if (words[0].equalsIgnoreCase("CLIENT_NAME")) {
-								
-								String name=words[1].trim();
-								 clientChatInfo.setClientName(name);
-								disconnectCount++;
-								
-							}
-
-					  }
-
-					  if(disconnectCount==3){
-						 clientChatInfo.setDisconnect(true);
-						  disconnectCount=0;
-					 }
-					  
-				  }else if(line.toUpperCase().startsWith("KILL_SERVICE")){
-					  
-					  clientChatInfo.setKillService(true);
-					  
-				  }else{
-					  
-					  clientChatInfo.setKillService(false);
-					  
-				  }
-
-				 clientChatInfo.setJoinChatCount(joinChatCount);
-				 clientChatInfo.setDisconnectCount(disconnectCount);
-				 clientChatInfo.setLeaveChatRoomCount(leaveChatRoomCount);
-				 clientChatInfo.setSendMessageCount(sendMessageCount);
-			      clientChatInfo.setMessageVO(messageVO);
-			      clientChatInfo.setChatInfoVO(chatInfoVO);
+							  
+						  }else if(line.toUpperCase().startsWith("KILL_SERVICE")){
+							  
+							  clientChatInfo.setKillService(true);
+							  
+						  }else{
+							  
+							  clientChatInfo.setKillService(false);
+							  
+						  }
+		
+						 clientChatInfo.setJoinChatCount(joinChatCount);
+						 clientChatInfo.setDisconnectCount(disconnectCount);
+						 clientChatInfo.setLeaveChatRoomCount(leaveChatRoomCount);
+						 clientChatInfo.setSendMessageCount(sendMessageCount);
+					      clientChatInfo.setMessageVO(messageVO);
+					      clientChatInfo.setChatInfoVO(chatInfoVO);
+					      
+					}else{
+						System.out.println("----------------No new Input recieved !---------");
+					}
 
 			      System.out.println("-----Outgoing----");
 					System.out.println("joinChatCount : "+clientChatInfo.getJoinChatCount());
@@ -892,7 +911,7 @@ class SendMessageVO {
 
 			}
 
-			private void joinChatCount(DataInputStream is, PrintStream os, ChatInfoVO chatInfoVO2,ChatInfoVO clientChatInfo,clientThread[] clientThreads,clientThread clientThread) {
+			private void joinChatCount(BufferedReader is, PrintWriter os, ChatInfoVO chatInfoVO2,ChatInfoVO clientChatInfo,clientThread[] clientThreads,clientThread clientThread) {
 				// TODO Auto-generated method stub
 
 				  os.println("JOINED_CHATROOM:"+chatInfoVO2.getChatRoom()
@@ -935,7 +954,7 @@ class SendMessageVO {
 			}
 
 
-			private void sendMessage(PrintStream os,ChatInfoVO clientChatInfo,clientThread[] clientThreads,SendMessageVO messageVO2,clientThread clientThread){
+			private void sendMessage(PrintWriter os,ChatInfoVO clientChatInfo,clientThread[] clientThreads,SendMessageVO messageVO2,clientThread clientThread){
 				   synchronized (clientThread) {
 
 			            for (int i = 0; i < clientChatInfo.getMaxClientsCount(); i++) {
@@ -961,7 +980,7 @@ class SendMessageVO {
 				   System.out.println("Message Sent Successfully !");
 			}
 
-			private void leaveChatRoom(PrintStream os,ChatInfoVO clientChatInfo,clientThread[] clientThreads,clientThread clientThread){
+			private void leaveChatRoom(PrintWriter os,ChatInfoVO clientChatInfo,clientThread[] clientThreads,clientThread clientThread){
 
 		    	  synchronized (clientThread) {
 		  	        for (int i = 0; i < clientChatInfo.getMaxClientsCount(); i++) {
@@ -999,23 +1018,21 @@ class SendMessageVO {
 		this.chatInfoVO = chatInfoVO;
 	}
 
-	public DataInputStream getIs() {
-		return is;
+	public BufferedReader getIs() {
+		return in;
 	}
 
-	public void setIs(DataInputStream is) {
-		this.is = is;
+	public void setIs(BufferedReader in) {
+		this.in = in;
 	}
 
-	public PrintStream getOs() {
+	public PrintWriter getOs() {
 		return os;
 	}
 
-	public void setOs(PrintStream os) {
+	public void setOs(PrintWriter os) {
 		this.os = os;
 	}
 
 
 	}
-
-

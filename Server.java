@@ -532,7 +532,7 @@ class SendMessageVO {
 													 
 						 os.println("HELO BASE_TEST\nIP:"+ip[1]
 				        	 		+ "\nPort:"+clientChatInfo.getSocket().getLocalPort()
-				        	 		+ "\nStudentID:TESTSERVER1234");
+				        	 		+ "\nStudentID:17319738");
 		
 						 }// If the client wants to join chat room
 						 else if(line.toUpperCase().startsWith("JOIN_CHATROOM")){
